@@ -1,0 +1,142 @@
+---
+import type { GetStaticPaths } from "astro";
+import MainLayout from "@layouts/MainLayout.astro";
+import type { PokemonListResponse } from "@interfaces/pokemon-list.response";
+import PokemonCard from "@components/pokemons/PokemonCard.astro";
+import Title from "@components/shared/Title.astro";
+import { Icon } from "astro-icon/components";
+
+export const getStaticPaths = ( async () => {
+
+    const rest = await fetch("https://pokeapi.co/api/v2/pokemon?limit=151");
+    const { results } = await rest.json() as PokemonListResponse;
+
+    return results.map( ({ name, url }) => ({
+        params: { name },
+        props: { name, url }
+    }))
+
+    // return [
+    //     { 
+    //         params: { name: "bulbasaur" }, 
+    //         props: { name: 'bulbasaur', url: "https://pokeapi.co/api/v2/pokemon/1/" }
+    //     },
+    //     {
+    //         params: { name: "charmander" }, 
+    //         props: { name: 'charmander', url: "https://pokeapi.co/api/v2/pokemon/4/" }
+    //     },
+    // ];
+
+}) satisfies GetStaticPaths;
+
+const { name } = Astro.params;
+const { url } = Astro.props;
+const id = url.split("/").at(-2);
+const audioSrc = `https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/legacy/${ id }.ogg`;
+const imageSrc = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+---
+
+<MainLayout 
+    title={`Pokemon - #${id} ${name}`}
+    descripcion={`Informacion sobre el pokemon ${name}`}
+    image={imageSrc}
+    >
+    <section class="mt-10 mx-10 flex flex-col justify-center items-center">
+
+        <div class="flex flex-row">
+            <div>
+                <button 
+                    onclick="history.back()"
+                    class="text-blue-500">
+                    Regresar
+                </button>
+                <Title>
+                    { name }
+                </Title>
+            </div>
+    
+            <button id="btn-favorite" class="ml-4" data-name={name} data-id={id} >
+                <Icon data-outline name="heart-outline" size={50} />
+                <Icon data-full class="hidden" name="heart-full" size={50} />
+            </button>
+        </div>
+
+
+        <PokemonCard name={name} url={url} isBig />
+        <audio controls class="mt-5">
+            <source src={audioSrc} type="audio/ogg" />
+            Tu navegador no soporta el elemento audio
+        </audio>
+    </section>
+</MainLayout>
+
+<script>
+
+    interface FavoritePokemon {
+        name: string;
+        id: number;
+    }
+
+    // document.addEventListener('astro:page-load', () => {
+    //     const btnFavorite = document.getElementById("btn-favorite") as HTMLButtonElement;
+
+    //     const name = btnFavorite.dataset.name;
+    //     const id = btnFavorite.dataset.id;
+
+    //     if(!btnFavorite) return;
+
+    //     btnFavorite.addEventListener('click', () => {
+    //         console.log({ name, id })
+    //     }) 
+    // })
+
+    let favoritePokemons: FavoritePokemon[] = JSON.parse(localStorage.getItem('favorites') ?? '[]');
+
+    const btnFavorite = document.getElementById("btn-favorite") as HTMLButtonElement;
+
+    const name = btnFavorite.dataset.name ?? '';
+    const id = btnFavorite.dataset.id ?? '';
+    const isFavorite = favoritePokemons.some(pokemon => pokemon.name === name);  
+    const heartOutline = btnFavorite.querySelector('[data-outline]') as HTMLElement;
+    const heartFull = btnFavorite.querySelector('[data-full]') as HTMLElement;
+
+    if(isFavorite){
+        heartOutline.classList.add('hidden');
+        heartFull.classList.remove('hidden');
+    }
+
+    const toggleFavorite = () => { 
+        
+        const isFavorite = favoritePokemons.some(pokemon => pokemon.name === name);    
+        if(isFavorite){
+            // Remover
+            favoritePokemons = favoritePokemons.filter(pokemon => pokemon.name !== name);
+        }else{
+            // Agregar
+            favoritePokemons.push({
+                name,
+                id: +id
+            })
+        }
+
+        localStorage.setItem('favorites', JSON.stringify(favoritePokemons));
+
+    }
+
+    btnFavorite.addEventListener('click', () => {
+        heartOutline.classList.toggle('hidden');
+        heartFull.classList.toggle('hidden');
+        toggleFavorite();
+    })
+
+</script>
+
+<style>
+    a {
+        @apply hover:underline text-blue-500;    
+    }
+
+    #btn-favorite {
+        @apply hover:animate-pulse;
+    }
+</style>
