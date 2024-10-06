@@ -72,13 +72,10 @@ const imageSrc = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprit
 
 <script>
 
-    interface FavoritePokemon {
-        name: string;
-        id: number;
-    }
-
     // document.addEventListener('astro:page-load', () => {
     //     const btnFavorite = document.getElementById("btn-favorite") as HTMLButtonElement;
+
+    import type { FavoritePokemon } from "@interfaces/favorite-pokemon";
 
     //     const name = btnFavorite.dataset.name;
     //     const id = btnFavorite.dataset.id;
